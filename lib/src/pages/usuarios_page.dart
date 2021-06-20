@@ -1,5 +1,7 @@
 import 'package:chat_app/src/models/usuario_model.dart';
+import 'package:chat_app/src/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 
@@ -13,23 +15,30 @@ class _UsuariosPageState extends State<UsuariosPage> {
   // Propiedades para mostrar la lista de usuarios conectados
   RefreshController _refreshController = RefreshController(initialRefresh: false);
   final usuarios = [
-    UsuarioModel(uid: '1', nombre: 'Maria', email: 'test1@test.com', online: true),
-    UsuarioModel(uid: '2', nombre: 'Melisa', email: 'test2@test.com', online: false),
-    UsuarioModel(uid: '3', nombre: 'Fernando', email: 'test3@test.com', online: true),
+    Usuario(uid: '1', nombre: 'Maria', email: 'test1@test.com', online: true),
+    Usuario(uid: '2', nombre: 'Melisa', email: 'test2@test.com', online: false),
+    Usuario(uid: '3', nombre: 'Fernando', email: 'test3@test.com', online: true),
   ];
 
   @override
   Widget build(BuildContext context) {
+    // Llamamos al provider
+    final authService = Provider.of<AuthService>(context);
+    final usuario = authService.usuario;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mi Nombre', style: TextStyle(color: Colors.black87),),
+        title: Text(usuario.nombre, style: TextStyle(color: Colors.black87),),
         centerTitle: true,
         elevation: 1,
         backgroundColor: Colors.white,
         leading: IconButton(
           icon: Icon(Icons.exit_to_app, color: Colors.black87,),
           onPressed: () {
-            
+            // TODO: Desconectar el socket Server
+            // Hago la referencia al metodo estatico para borrar el token
+            Navigator.pushReplacementNamed(context, 'login');
+            AuthService.deleteToken();
           },
         ),
         actions: [
@@ -72,7 +81,7 @@ class _ListViewUsuarios extends StatelessWidget {
     @required this.usuarios,
   }) : super(key: key);
   // Lista de usuarios que recibira este widget
-  final List<UsuarioModel> usuarios;
+  final List<Usuario> usuarios;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +97,7 @@ class _ListViewUsuarios extends StatelessWidget {
 // Widget que contiene la construccion del ListTile para el usuario en la lista
 class _UsuarioListTile extends StatelessWidget {
   // Propiedades
-  final UsuarioModel usuario;
+  final Usuario usuario;
   _UsuarioListTile(this.usuario);
 
   @override

@@ -5,7 +5,7 @@ class ChatMessage extends StatelessWidget {
   // Propiedades para usar en el widget como el texto a mostrar y el uid que identifica el mensaje
   final String texto;
   final String uid;
-  // Propiedad de Animacion del widget
+  // Propiedad de Animacion del widget, solo declarada el parametro del controller es pasado por parametro con nombre a este widget
   final AnimationController animationController;
   // Constructor con nombre de los parametros del widget
   const ChatMessage({

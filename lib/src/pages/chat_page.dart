@@ -158,7 +158,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       animationController: AnimationController(
           vsync: this, duration: Duration(milliseconds: 400)),
     );
-    // Agregacion a la lista de mensajes
+    // Agregacion a la lista de mensajes en pantalla
     _messages.insert(0, newMessage);
     // Disparamos el proceso de animaccion del nuevo mensaje
     newMessage.animationController.forward();

@@ -1,7 +1,11 @@
-import 'package:chat_app/src/widgets/boton_azul.dart';
-import 'package:chat_app/src/widgets/labels.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
+import 'package:chat_app/src/services/auth_service.dart';
+
+import 'package:chat_app/src/helpers/mostrar_alerta.dart';
+import 'package:chat_app/src/widgets/boton_azul.dart';
+import 'package:chat_app/src/widgets/labels.dart';
 import 'package:chat_app/src/widgets/custom_input.dart';
 import 'package:chat_app/src/widgets/logo.dart';
 
@@ -60,6 +64,8 @@ class __FormState extends State<_Form> {
 
   @override
   Widget build(BuildContext context) {
+    // Invocamos la instancia del authServiceProvider
+    final authService = Provider.of<AuthService>(context);
     return Container(
       margin: EdgeInsets.only(top: 40),
       // color: Colors.blue,
@@ -83,9 +89,21 @@ class __FormState extends State<_Form> {
           // Boton usado para el ingreso y el post de los valores de los campos
           BotonAzul(
             text: 'Ingresar', 
-            onPressed: (){  
-              print(emailCtrl.text);
-              print(passCtrl.text);
+            onPressed: authService.autenticando ? null : () async{
+              // Quitar el teclado el foco en este campo al presionar el ingresar
+              FocusScope.of(context).unfocus();
+              // Ejecucion del Login con la peticion http
+              // Enviando la informacion al login, comprobado que funciona
+              final loginOk = await authService.login(emailCtrl.text.trim(), passCtrl.text.trim());
+              // Comprobando la autenticacion si fue exitosa
+              if (loginOk) {
+                // TODO: Conectar a nuestro socket server
+                // Moviendonos a la pantalla ya autenticado
+                Navigator.pushReplacementNamed(context, 'usuarios');
+              } else {
+                // Mostrar Alerta llamada del alert de helpers, al no realizarse el login
+                mostrarAlerta(context, 'Login Incorrecto', 'Revise las credenciales digitadas nuevamente');
+              }
             }
           )
         ],
