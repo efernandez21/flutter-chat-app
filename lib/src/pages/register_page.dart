@@ -1,3 +1,4 @@
+import 'package:chat_app/src/services/socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -66,7 +67,7 @@ class __FormState extends State<_Form> {
   Widget build(BuildContext context) {
     // Invocamos la instancia del authServiceProvider
     final authService = Provider.of<AuthService>(context);
-
+    final socketService = Provider.of<SocketService>(context);
     return Container(
       margin: EdgeInsets.only(top: 40),
       // color: Colors.blue,
@@ -106,7 +107,7 @@ class __FormState extends State<_Form> {
               final registroOk = await authService.register(nameCtrl.text.trim(), emailCtrl.text.trim(), passCtrl.text.trim());
               // Comprobando la autenticacion si fue exitosa, si el registro es valor booleano
               if (registroOk == true) {
-                // TODO: Conectar a nuestro socket server
+                socketService.connect();
                 // Moviendonos a la pantalla ya autenticado
                 Navigator.pushReplacementNamed(context, 'usuarios');
               } else {

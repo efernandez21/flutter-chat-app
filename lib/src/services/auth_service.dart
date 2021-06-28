@@ -46,7 +46,7 @@ class AuthService with ChangeNotifier {
     final data = {'email': email, 'password': password};
     // Realizacion de una peticion http, teniendo en cuenta que las variables cambian dependiendo de la plataforma
 
-    final resp = await http.post('${Environtment.apiUrl}/login',
+    final resp = await http.post('${Environment.apiUrl}/login',
         body: jsonEncode(data), headers: {'Content-Type': 'application/json'});
     // Probamos la respuesta, debemos mapearla usando los modelos, confirmar si la peticion es correcta
     // print(resp.body);
@@ -73,7 +73,7 @@ class AuthService with ChangeNotifier {
     // Recibir los valores y los mapeamos para enviarlos en la peticion
     final data = {'nombre': nombre, 'email': email, 'password': password};
 
-    final resp = await http.post('${Environtment.apiUrl}/login/new',
+    final resp = await http.post('${Environment.apiUrl}/login/new',
         body: jsonEncode(data), headers: {'Content-Type': 'application/json'});
     // Probamos la respuesta, debemos mapearla usando los modelos, confirmar si la peticion es correcta
     // print(resp.body);
@@ -111,7 +111,7 @@ class AuthService with ChangeNotifier {
   Future<bool> isLoggedIn() async {
     // Leemos el token
     final token = await this._storage.read(key: 'token');
-    final resp = await http.get('${Environtment.apiUrl}/login/renew',
+    final resp = await http.get('${Environment.apiUrl}/login/renew',
         headers: {'Content-Type': 'application/json', 'x-token': token});
     // Probamos la respuesta, debemos mapearla usando los modelos, confirmar si la peticion es correcta
     // Comprobamos si el statusCode fue exitoso para continuar

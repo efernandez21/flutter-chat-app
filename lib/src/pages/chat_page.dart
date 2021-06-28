@@ -1,9 +1,13 @@
 import 'dart:io';
-import 'dart:ui';
 
+import 'package:chat_app/src/models/mensajes_response.dart';
+import 'package:chat_app/src/services/auth_service.dart';
+import 'package:chat_app/src/services/chat_service.dart';
+import 'package:chat_app/src/services/socket_service.dart';
 import 'package:chat_app/src/widgets/chat_message.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
   // Construccion de la pantalla del chat
@@ -18,17 +22,67 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   final _focusNode = new FocusNode();
   bool _estaEscribiendo = false;
   // Lista temporal de mensajes de chat
-  List<ChatMessage> _messages = [
-    // ChatMessage(uid: '123', texto: 'Hola Mundo',),
-    // ChatMessage(uid: '123', texto: 'Hola Mundo',),
-    // ChatMessage(uid: '12345', texto: 'Hola Mundo',),
-    // ChatMessage(uid: '123', texto: 'Hola Mundo',),
-    // ChatMessage(uid: '12345', texto: 'Hola Mundo',),
-    // ChatMessage(uid: '123', texto: 'Hola Mundo',),
-  ];
+  List<ChatMessage> _messages = [];
+  // Declaramos una variable para mi ChatService
+  ChatService chatService;
+  // Llamamos el socketService para la comunicacion con el servidor
+  SocketService socketService;
+  AuthService authService;
+  // Asignacion de la varaible en el initstate
+  @override
+  void initState() {
+    super.initState();
+    // llamado a mi provider, listen en false, ya que no se puede redibujar nada en el initstate a menos que se este en un callback
+    this.chatService = Provider.of<ChatService>(context, listen: false);
+    this.socketService = Provider.of<SocketService>(context, listen: false);
+    this.authService = Provider.of<AuthService>(context, listen: false);
+    // Metodo para escuchar el evento de mi mensaje personal
+    this.socketService.socket.on('mensaje-personal', _escucharMensaje);
+    // Llamar el cargado del historial de mensajes
+    _cargarHistorial(this.chatService.usuarioPara.uid);
+  }
+
+  // Metodo para cargar el historial en pantalla
+  void _cargarHistorial(String usuarioID) async {
+    // Obtenemos la lista de mensajes
+    List<Mensaje> chat = await this.chatService.getChat(usuarioID);
+    // Crear los mensajes ChatMessage para el historial de mensajes
+    final history = chat.map((m) => new ChatMessage(
+      texto: m.mensaje,
+      uid: m.de,
+      animationController: new AnimationController(vsync: this, duration: Duration(milliseconds: 0))..forward(),
+    ));
+    // Añadir a la coleccion de mensajes
+    setState(() {
+      // Insertamos los mensajes al principio de la lista que esta en modo reverse
+      _messages.insertAll(0, history);
+    });
+  }
+
+  // Metodo para escuchar el mensaje respectivo ded otro usuario
+  void _escucharMensaje(dynamic data) {
+    // print('Tengo Mensaje!!! ${data['mensaje']}');
+    // Comprobacion del mensaje al usuario especificado
+    if (data['de'] != chatService.usuarioPara.uid) return;
+
+    ChatMessage message = new ChatMessage(
+        texto: data['mensaje'],
+        uid: data['de'],
+        animationController: AnimationController(
+            vsync: this, duration: Duration(milliseconds: 300)));
+    // Actualizamos la pantalla
+    setState(() {
+      _messages.insert(0, message);
+    });
+    // Ejecutamos la animacion
+    message.animationController.forward();
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Usando el provider para trabajar con el usuario conectado a enviar mi mensaje
+    final usuarioDestino = chatService.usuarioPara;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -37,7 +91,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           children: [
             CircleAvatar(
               child: Text(
-                'Te',
+                usuarioDestino.nombre.substring(0, 2),
                 style: TextStyle(fontSize: 12),
               ),
               backgroundColor: Colors.blue[100],
@@ -47,7 +101,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
               height: 3,
             ),
             Text(
-              'Melissa Flores',
+              usuarioDestino.nombre,
               style: TextStyle(color: Colors.black87, fontSize: 12),
             )
           ],
@@ -144,16 +198,13 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     // Si el texto es vacio no lo agrege a mi lista
     if (texto.length == 0) return;
 
-    print('-------------------');
-    print(texto);
-    print('--------------------');
     // Limpia el texto del textField
     _textController.clear();
     // Llama al foco en el input, para que continue seleccionando este input
     _focusNode.requestFocus();
     // Creando la nueva instancia del chat Message
     final newMessage = new ChatMessage(
-      uid: '123',
+      uid: authService.usuario.uid,
       texto: texto,
       animationController: AnimationController(
           vsync: this, duration: Duration(milliseconds: 400)),
@@ -166,7 +217,14 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
       // Actualizamos el estado del estaEscribiendo a false porque ya enviamos el mensaje
       _estaEscribiendo = false;
     });
+    // Enviar el mensaje a mi servidor como mensaje-personal, y el uid respectivo al enviar el mensaje
+    this.socketService.emit('mensaje-personal', {
+      'de': this.authService.usuario.uid,
+      'para': this.chatService.usuarioPara.uid,
+      'mensaje': texto
+    });
   }
+
   // Dispose de los animation controller de los mensajes
   @override
   void dispose() {
@@ -176,6 +234,8 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     for (ChatMessage message in _messages) {
       message.animationController.dispose();
     }
+    // Al salir de la pantalla nos desconectamos de la sala del chat y asi no gastar mas memoria
+    this.socketService.socket.off('mensaje-personal');
     super.dispose();
   }
 }
